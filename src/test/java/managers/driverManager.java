@@ -1,5 +1,6 @@
 package managers;
 
+import helpers.configFileReader;
 import io.appium.java_client.MobileElement;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
@@ -19,12 +20,13 @@ public class driverManager {
         private AndroidDriver createDriver()
         {
             DesiredCapabilities caps = new DesiredCapabilities();
-            caps.setCapability("deviceName", "My Phone");
-            caps.setCapability("udid", "emulator-5554"); //Give Device ID of your mobile phone
-            caps.setCapability("platformName", "Android");
-            caps.setCapability("platformVersion", "6.0");
-            caps.setCapability("appPackage", "com.todoist");
-            caps.setCapability("appActivity", "com.todoist.activity.HomeActivity");
+            configFileReader reader = new configFileReader("config.properties");
+            caps.setCapability("deviceName",reader.getPropertyFromFile("deviceName"));
+            caps.setCapability("udid", reader.getPropertyFromFile("deviceID")); //Give Device ID of your mobile phone
+            caps.setCapability("platformName", reader.getPropertyFromFile("platformName"));
+            caps.setCapability("platformVersion", reader.getPropertyFromFile("platformVersion"));
+            caps.setCapability("appPackage", reader.getPropertyFromFile("appPackage"));
+            caps.setCapability("appActivity", reader.getPropertyFromFile("appActivity"));
             caps.setCapability("noReset", "true");
 
             try {
