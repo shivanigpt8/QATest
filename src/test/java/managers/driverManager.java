@@ -41,10 +41,6 @@ public class driverManager {
                 return webDriver;
             }
             else if(browser.equalsIgnoreCase("firefox")){
-                File pathToBinary = new File("C:\\Program Files\\Mozilla Firefox15\\Firefox.exe");
-                FirefoxBinary ffBinary = new FirefoxBinary(pathToBinary);
-                FirefoxProfile firefoxProfile = new FirefoxProfile();
-                FirefoxDriver _driver = new FirefoxDriver(ffBinary,firefoxProfile);
                 String driverPath = reader.getPropertyFromFile("driversPath");
                 driverPath = System.getProperty("user.dir") + driverPath + "geckodriver.exe";
                 System.setProperty("webdriver.firefox.marionette", driverPath);
