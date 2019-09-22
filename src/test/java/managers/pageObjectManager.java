@@ -1,18 +1,21 @@
 package managers;
 
 import io.appium.java_client.android.AndroidDriver;
+import org.openqa.selenium.WebDriver;
+import pages.fileListPage;
 import pages.homePage;
 import pages.loginPage;
-import pages.projectPage;
+import pages.rewardsPage;
 
 public class pageObjectManager {
 
-    private AndroidDriver driver;
+    private WebDriver driver;
     private homePage homePg;
     private loginPage loginPg;
-    private projectPage projectPg;
+    private rewardsPage rewardsPg;
+    private fileListPage fileListPg;
 
-    public pageObjectManager(AndroidDriver driver)
+    public pageObjectManager(WebDriver driver)
     {
         this.driver = driver;
     }
@@ -27,8 +30,13 @@ public class pageObjectManager {
         return loginPg == null ? loginPg = new loginPage(driver) : loginPg;
     }
 
-    public projectPage getProjectPage()
+    public rewardsPage getRewardsPage()
     {
-        return projectPg == null ? projectPg = new projectPage(driver) : projectPg;
+        return rewardsPg == null ? rewardsPg = new rewardsPage(driver) : rewardsPg;
+    }
+
+    public fileListPage getFileListPage()
+    {
+        return fileListPg == null ? fileListPg = new fileListPage(driver) : fileListPg;
     }
 }

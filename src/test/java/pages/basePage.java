@@ -1,12 +1,14 @@
 package pages;
 
-import io.appium.java_client.android.AndroidDriver;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class basePage {
-    AndroidDriver driver;
+    WebDriver driver;
+    WebDriverWait wait;
 
-    public basePage(AndroidDriver driver)
+    public basePage(WebDriver driver)
     {
         this.driver = driver;
         PageFactory.initElements(driver,this);

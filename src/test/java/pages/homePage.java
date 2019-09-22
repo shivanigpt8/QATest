@@ -1,44 +1,60 @@
 package pages;
 
-import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.pagefactory.AndroidFindBy;
-import io.appium.java_client.pagefactory.AppiumFieldDecorator;
+import cucumber.api.java.en.When;
+import org.junit.Assert;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
-
-import java.util.List;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class homePage extends basePage{
 
-    @AndroidFindBy(id = "Change the current view")
-    private WebElement btnMenu;
+    @FindBy(xpath = "//i[@src=\"rewards\"]")
+    private WebElement rewardsIcon;
 
-    @AndroidFindBy(xpath = "/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.support.v4.widget.DrawerLayout/android.widget.FrameLayout/android.support.v7.widget.RecyclerView/android.widget.RelativeLayout[4]/android.widget.TextView")
-    private WebElement projects;
+    @FindBy(xpath = "//i[@src=\"customers\"]")
+    private WebElement customerIcon;
 
-    public homePage(AndroidDriver driver)
+    @FindBy(xpath = "//a[@href=\"/dashboard/p/rewards\"]")
+    private WebElement rewardsSubMenu;
+
+    @FindBy(xpath = "//a[@href=\"/dashboard/p/bulkaction\"]")
+    private WebElement bulkActionSubMenu;
+
+    @FindBy(xpath = "//strong[text()=\"File List\"]")
+    private WebElement fileListTitle;
+
+    public homePage(WebDriver driver)
     {
         super(driver);
-        PageFactory.initElements(new AppiumFieldDecorator(driver),this);
+        PageFactory.initElements(driver,this);
     }
 
-    public WebElement getProject(String projectName)
+    public void goToPage(String pageName) throws Throwable
     {
-        btnMenu.click();
-        projects.click();
-        List<WebElement> projects = driver.findElements(By.id("android:id/content"));
-        for(int i=1 ; i <  projects.size(); i++)
-        {
-            WebElement project = driver.findElement(By.xpath("//android.support.v7.widget.RecyclerView/android.widget.RelativeLayout["+i+"]/android.widget.TextView[1]"));
-            String name = project.getText();
-            if(name.equals(projectName))
-            {
-                System.out.println("Project: " + name + " found");
-                return project;
-            }
-                    }
-        return null;
-
+        if(pageName.equalsIgnoreCase("rewards")){
+            rewardsIcon.click();
+            wait = new WebDriverWait(driver,10);
+            wait.until(ExpectedConditions.visibilityOf(rewardsSubMenu));
+            rewardsSubMenu.click();
+        }
+        else if(pageName.equalsIgnoreCase("File List")){
+            Thread.sleep(2000);
+            Actions action = new Actions(driver);
+            WebElement we = driver.findElement(By.xpath("//li[@data-key=\"customer_management\"]//i[@src=\"customers\"]"));
+            action.moveToElement(we).build().perform();
+            wait = new WebDriverWait(driver,10);
+            wait.until(ExpectedConditions.visibilityOf(bulkActionSubMenu));
+            bulkActionSubMenu.click();
+            wait.until(ExpectedConditions.visibilityOf(fileListTitle));
+        }
+        else{
+            Assert.fail("Page " + pageName + " is not available");
+        }
     }
 }

@@ -3,18 +3,55 @@ package managers;
 import helpers.configFileReader;
 import io.appium.java_client.MobileElement;
 import io.appium.java_client.android.AndroidDriver;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.firefox.FirefoxBinary;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxProfile;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 public class driverManager {
 
+        private WebDriver webDriver;
         private AndroidDriver driver;
 
-        public AndroidDriver getDriver() {
-            if(driver == null) driver = createDriver();
-            return driver;
+        public WebDriver getWebDriver(){
+            if(webDriver == null) {
+                webDriver = createWebDriver();
+            }
+            return webDriver;
+        }
+
+        private WebDriver createWebDriver()
+        {
+            configFileReader reader = new configFileReader("config.properties");
+            String browser = reader.getPropertyFromFile("browser");
+
+            if(browser.equalsIgnoreCase("chrome")){
+                String driverPath = reader.getPropertyFromFile("driversPath");
+                driverPath = System.getProperty("user.dir") + driverPath + "chromedriver.exe";
+                System.setProperty("webdriver.chrome.driver", driverPath);
+                webDriver = new ChromeDriver();
+                return webDriver;
+            }
+            else if(browser.equalsIgnoreCase("firefox")){
+                File pathToBinary = new File("C:\\Program Files\\Mozilla Firefox15\\Firefox.exe");
+                FirefoxBinary ffBinary = new FirefoxBinary(pathToBinary);
+                FirefoxProfile firefoxProfile = new FirefoxProfile();
+                FirefoxDriver _driver = new FirefoxDriver(ffBinary,firefoxProfile);
+                String driverPath = reader.getPropertyFromFile("driversPath");
+                driverPath = System.getProperty("user.dir") + driverPath + "geckodriver.exe";
+                System.setProperty("webdriver.firefox.marionette", driverPath);
+                WebDriver driver = new FirefoxDriver();
+                return webDriver;
+            }
+            return null;
         }
 
         private AndroidDriver createDriver()

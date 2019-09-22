@@ -1,38 +1,33 @@
 package pages;
 
-import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.pagefactory.AndroidFindBy;
-import io.appium.java_client.pagefactory.AppiumFieldDecorator;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class loginPage extends basePage{
 
-    @AndroidFindBy(id = "com.todoist:id/btn_welcome_continue_with_email")
-    private WebElement btnContinueWithEmail;
-
-    @AndroidFindBy(id = "com.todoist:id/email_exists_input")
+    @FindBy(id = "email")
     private WebElement txtFieldEmail;
 
-    @AndroidFindBy(id = "com.todoist:id/btn_continue_with_email")
-    private WebElement btnContinue;
-
-    @AndroidFindBy(id = "com.todoist:id/log_in_password")
+    @FindBy(id = "password")
     private WebElement txtFieldPassword;
 
-    @AndroidFindBy(id = "com.todoist:id/btn_log_in")
+    @FindBy(xpath = "//button[@type=\"submit\"]")
     private WebElement btnLogin;
 
-    public loginPage(AndroidDriver driver)
+    public loginPage(WebDriver driver)
     {
         super(driver);
-        PageFactory.initElements(new AppiumFieldDecorator(driver),this);
+        PageFactory.initElements(driver,this);
     }
     public void login(String email, String password)
     {
-        btnContinueWithEmail.click();
+        wait = new WebDriverWait(driver,10);
+        wait.until(ExpectedConditions.visibilityOf(txtFieldEmail));
         txtFieldEmail.sendKeys(email);
-        btnContinue.click();
         txtFieldPassword.sendKeys(password);
         btnLogin.click();
     }

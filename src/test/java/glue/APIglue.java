@@ -1,143 +1,91 @@
 package glue;
 
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.path.json.JsonPath;
+import com.jayway.restassured.response.Response;
+import com.jayway.restassured.specification.RequestSpecification;
+import cucumber.api.java.en.And;
+import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
+import helpers.configFileReader;
 import org.junit.Assert;
-
-import java.net.URLEncoder;
+import java.util.List;
 
 public class APIglue {
 
-    @Then("^Verify via API that task \"(.*)\" created successfully$")
-    public void checkTask(String taskName) throws Exception
-    {
-        String url = "https://api.todoist.com/rest/v1/tasks";
-        URL obj = new URL(url);
-        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-        con.setRequestMethod("GET");
-        con.setRequestProperty("authorization","Bearer " + "2f72bba03895a837fd2c08b4b082adf8fb2304fd");
-        int responseCode = con.getResponseCode();
-        System.out.println("Response Code : " + responseCode);
-        Assert.assertEquals("Create project API resposnse code is:" + con.getResponseCode(),con.getResponseCode(),200);
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer response = new StringBuffer();
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
+    private RequestSpecification request;
+    private String bearer_token;
+    private Response response;
 
-        System.out.println(response.toString());
+    private void set_base_URI(){
+        configFileReader reader = new configFileReader("config.properties");
+        RestAssured.baseURI = reader.getPropertyFromFile("baseURI");
+        request = RestAssured.given();
+    }
 
-        JSONArray myResponse = new JSONArray(response.toString());
-        for(int i =0; i<myResponse.length(); i++)
-        {
-            JSONObject jObj = myResponse.getJSONObject(i);
-            if(jObj.has("content"))
-            {
-                if(jObj.getString("content").equalsIgnoreCase(taskName)) {
-                    System.out.println("Name is: " + jObj.getString("content"));
-                    Assert.assertEquals("Task is created",jObj.getString("content"),taskName);
-                    return;
-                }
+    @Given("^user logged in with \"([^\"]*)\" and \"([^\"]*)\"$")
+    public void get_user_session(String email, String password){
+        set_base_URI();
+        Response response = request.formParams("email", email,"password", password).post("/user_sessions");
+
+        Assert.assertEquals("User session is created",201, response.getStatusCode());
+        bearer_token = response.jsonPath().get("bearer_token");
+    }
+
+    @Then("^verify that logged in user has sufficient permission to create a reward$")
+    public void check_user_authorization(){
+        set_base_URI();
+        response = request.header("Authorization","Bearer " + bearer_token).get("/authorizations");
+        Assert.assertEquals("User authorization is retrieved",200, response.getStatusCode());
+        System.out.println(response.getStatusCode());
+        System.out.println(response.asString());
+        JsonPath jsonPathEvaluator = response.jsonPath();
+        List<String> permissions = jsonPathEvaluator.get("data.permissions.resource_name");
+        int i =0 ;
+        for(String s : permissions){
+            if(s.equals("rewards")){
+                List<String> actions = jsonPathEvaluator.get("data.permissions.actions["+i+"]");
+                System.out.println("Actions for: " + s + " are " + actions);
+                Assert.assertTrue("This user doesn't have permission to create a reward",actions.contains("edit"));
+                System.out.println("This user have permission to create a reward");
             }
+            i++;
         }
-        Assert.fail("Task is not created");
     }
 
-
-    @When("create project \"(.*)\" via API")
-    public void createProject(String projectName) throws Exception
-    {
-        URL url = new URL("https://api.todoist.com/rest/v1/projects");
-        Map<String,String> params = new HashMap<>();
-        params.put("name", projectName);
-        StringBuilder postData = new StringBuilder();
-        for (Map.Entry<String,String> param : params.entrySet()) {
-            if (postData.length() != 0) postData.append('&');
-            postData.append(URLEncoder.encode(param.getKey(), "UTF-8"));
-            postData.append('=');
-            postData.append(URLEncoder.encode(String.valueOf(param.getValue()), "UTF-8"));
-        }
-        byte[] postDataBytes = postData.toString().getBytes("UTF-8");
-        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("authorization","Bearer " + "2f72bba03895a837fd2c08b4b082adf8fb2304fd");
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
-        conn.setDoOutput(true);
-        conn.getOutputStream().write(postDataBytes);
-        Reader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
-        StringBuilder sb = new StringBuilder();
-        for (int c; (c = in.read()) >= 0;)
-            sb.append((char)c);
-        String response = sb.toString();
-        System.out.println(response);
-        JSONObject myResponse = new JSONObject(response.toString());
-        Assert.assertEquals("Project name in API response is not correct",projectName,myResponse.getString("name"));
-        Assert.assertEquals("Create project API resposnse code is:" + conn.getResponseCode(),200,conn.getResponseCode());
+    @And("^tries to access \"([^\"]*)\" API endpoint$")
+    public void user_tries_to_access(String path){
+        set_base_URI();
+        response = request.header("Authorization","Bearer " + bearer_token).get(path);
     }
 
-    @Then("^Reopen test task \"(.*)\" via API$")
-    public void reopenTask(String taskName) throws Exception
-    {
-        Object taskID = getTaskIDFromTaskName(taskName);
-        System.out.println("Task Id for task " + taskName + " is " + taskID);
-        String link = "https://api.todoist.com/rest/v1/tasks/" + taskID + "/reopen";
-        URL url = new URL(link);
-        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("authorization","Bearer " + "2f72bba03895a837fd2c08b4b082adf8fb2304fd");
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        Assert.assertEquals("Create project API resposnse code is:" + conn.getResponseCode(),conn.getResponseCode(),204);
-        Assert.assertEquals("Response body of reopen task API is not blank",conn.getResponseMessage(),"No Content");
+    @Then("^status code (\\d+) and message \"([^\"]*)\" should be returned$")
+    public void verify_code_and_message(int code, String message){
+        Assert.assertEquals("Logged in user is able to access the resource",code, response.getStatusCode());
+        Assert.assertEquals("Expected error message mismatch",message, response.jsonPath().getString("message"));
     }
 
-    public Object getTaskIDFromTaskName(String taskName) throws Exception
-    {
-        String url = "https://api.todoist.com/rest/v1/tasks";
-        URL obj = new URL(url);
-        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-        con.setRequestMethod("GET");
-        con.setRequestProperty("authorization","Bearer " + "2f72bba03895a837fd2c08b4b082adf8fb2304fd");
-        int responseCode = con.getResponseCode();
-        System.out.println("\nSending 'GET' request to URL : " + url);
-        System.out.println("Response Code : " + responseCode);
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer response = new StringBuffer();
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
-
-        System.out.println(response.toString());
-
-        JSONArray myResponse = new JSONArray(response.toString());
-        System.out.println("result after Reading JSON Response");
-        for(int i =0; i<myResponse.length(); i++)
-        {
-            JSONObject jObj = myResponse.getJSONObject(i);
-            if(jObj.has("content"))
-            {
-                if(jObj.getString("content").equalsIgnoreCase(taskName)) {
-                    return jObj.get("id");
-                }
+    @Then("^verify that logged in user has sufficient permission to \"([^\"]*)\" \"([^\"]*)\"$")
+    public void check_user_authorization(String action, String resource){
+        set_base_URI();
+        response = request.header("Authorization","Bearer " + bearer_token).get("/authorizations");
+        Assert.assertEquals("User authorization is retrieved",200, response.getStatusCode());
+        System.out.println(response.getStatusCode());
+        System.out.println(response.asString());
+        JsonPath jsonPathEvaluator = response.jsonPath();
+        List<String> permissions = jsonPathEvaluator.get("data.permissions.resource_name");
+        int i =0 ;
+        for(String s : permissions){
+            if(s.equals(resource)){
+                List<String> actions = jsonPathEvaluator.get("data.permissions.actions["+i+"]");
+                System.out.println("Actions for: " + s + " are " + actions);
+                Assert.assertTrue("This user doesn't have permission to " + action + " " + resource,actions.contains(action));
+                System.out.println("This user have permission to " + action + " " + resource);
+                return;
             }
+            i++;
         }
-        return 0;
+        Assert.fail(resource + " not present in list of permissions for the logged in user");
     }
-}
+
+   }
